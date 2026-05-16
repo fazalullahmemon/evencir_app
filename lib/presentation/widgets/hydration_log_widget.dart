@@ -51,7 +51,7 @@ class HydrationLogWidget extends StatelessWidget {
                         progressText,
                         style: AppTextStyles.caloriesNumberStyle.copyWith(
                           color: AppColors.hydrationAccent,
-                          fontSize: 52,
+                          fontSize: 48.sp,
                         ),
                       ),
                       const SizedBox(height: 30),
@@ -59,7 +59,7 @@ class HydrationLogWidget extends StatelessWidget {
                         'Hydration',
                         style: AppTextStyles.title.copyWith(
                           color: AppColors.whiteColor,
-                          fontSize: 22,
+                          fontSize: 18.sp,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -67,7 +67,7 @@ class HydrationLogWidget extends StatelessWidget {
                         'Log Now',
                         style: AppTextStyles.caloriesRemainingStyle.copyWith(
                           color: AppColors.mutedText,
-                          fontSize: 13,
+                          fontSize: 13.sp,
                         ),
                       ),
                     ],

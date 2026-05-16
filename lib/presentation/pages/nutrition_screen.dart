@@ -2,14 +2,15 @@ import 'package:evencir_app/core/utils/app_colors.dart';
 import 'package:evencir_app/core/utils/app_text_styles.dart';
 import 'package:evencir_app/data/models/calorie_insight_data.dart';
 import 'package:evencir_app/data/models/hydration_log_data.dart';
-import 'package:evencir_app/data/models/workout_calendar_entry.dart';
 import 'package:evencir_app/data/models/weight_insight_data.dart';
 import 'package:evencir_app/gen/assets.gen.dart';
+import 'package:evencir_app/presentation/bloc/plan_bloc.dart';
 import 'package:evencir_app/presentation/widgets/calorie_insight_widget.dart';
 import 'package:evencir_app/presentation/widgets/hydration_log_widget.dart';
 import 'package:evencir_app/presentation/widgets/workout_calendar_entry_card.dart';
 import 'package:evencir_app/presentation/widgets/weight_insight_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class NutritionScreen extends StatefulWidget {
@@ -36,20 +37,6 @@ class _NutritionScreenState extends State<NutritionScreen> {
     goalMl: 2000,
     addedMl: 500,
   );
-
-  static const List<WorkoutCalendarEntry> _workoutEntries = [
-    WorkoutCalendarEntry(
-      title: 'Upper Body',
-      dateRangeText: 'December 22 - 25m - 30m',
-    ),
-    WorkoutCalendarEntry(
-      title: 'Lower Body',
-      dateRangeText: 'December 23 - 20m - 28m',
-    ),
-  ];
-
-  DateTime _focusedDay = DateTime.now();
-  DateTime _selectedDay = DateTime.now();
 
   bool get _isDaytime {
     final hour = DateTime.now().hour;
@@ -78,20 +65,23 @@ class _NutritionScreenState extends State<NutritionScreen> {
   }
 
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
-    setState(() {
-      _selectedDay = selectedDay;
-      _focusedDay = focusedDay;
-    });
+    final planBloc = context.read<PlanBloc>();
+    planBloc.selectNutritionDay(selectedDay);
+    planBloc.focusNutritionDay(selectedDay);
   }
 
   void _openFullCalendarBottomSheet() {
+    final planBloc = context.read<PlanBloc>();
+    final initialSelectedDay = planBloc.state.nutritionSelectedDay;
+    final initialFocusedDay = planBloc.state.nutritionFocusedDay;
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        DateTime focusedDay = _focusedDay;
-        DateTime selectedDay = _selectedDay;
+        DateTime focusedDay = initialFocusedDay;
+        DateTime selectedDay = initialSelectedDay;
 
         return StatefulBuilder(
           builder: (context, setModalState) {
@@ -121,19 +111,19 @@ class _NutritionScreenState extends State<NutritionScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          IconButton(
-                            onPressed: () {
-                              setModalState(() {
-                                focusedDay = DateTime(
-                                  focusedDay.year,
-                                  focusedDay.month - 1,
-                                  1,
-                                );
-                              });
-                            },
-                            icon: const Icon(
-                              Icons.chevron_left,
-                              color: AppColors.whiteColor,
+                        IconButton(
+                          onPressed: () {
+                            setModalState(() {
+                              focusedDay = DateTime(
+                                focusedDay.year,
+                                focusedDay.month - 1,
+                                1,
+                              );
+                            });
+                          },
+                          icon: const Icon(
+                            Icons.chevron_left,
+                            color: AppColors.whiteColor,
                               size: 30,
                             ),
                           ),
@@ -144,18 +134,18 @@ class _NutritionScreenState extends State<NutritionScreen> {
                             ),
                           ),
                           IconButton(
-                            onPressed: () {
-                              setModalState(() {
-                                focusedDay = DateTime(
-                                  focusedDay.year,
-                                  focusedDay.month + 1,
-                                  1,
-                                );
-                              });
-                            },
-                            icon: const Icon(
-                              Icons.chevron_right,
-                              color: AppColors.whiteColor,
+                          onPressed: () {
+                            setModalState(() {
+                              focusedDay = DateTime(
+                                focusedDay.year,
+                                focusedDay.month + 1,
+                                1,
+                              );
+                            });
+                          },
+                          icon: const Icon(
+                            Icons.chevron_right,
+                            color: AppColors.whiteColor,
                               size: 30,
                             ),
                           ),
@@ -183,10 +173,8 @@ class _NutritionScreenState extends State<NutritionScreen> {
                             selectedDay = day;
                             focusedDay = newFocusedDay;
                           });
-                          setState(() {
-                            _selectedDay = day;
-                            _focusedDay = newFocusedDay;
-                          });
+                          planBloc.selectNutritionDay(day);
+                          planBloc.focusNutritionDay(day);
                         },
                         onPageChanged: (newFocusedDay) {
                           setModalState(() {
@@ -337,319 +325,346 @@ class _NutritionScreenState extends State<NutritionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final today = DateTime.now();
-    final headerText = isSameDay(_selectedDay, today)
-        ? 'Today, ${_monthLabel(_selectedDay)}'
-        : _monthLabel(_selectedDay);
+    return BlocBuilder<PlanBloc, PlanState>(
+      builder: (context, state) {
+        final planBloc = context.read<PlanBloc>();
+        final selectedDay = state.nutritionSelectedDay;
+        final today = DateTime.now();
+        final headerText = isSameDay(selectedDay, today)
+            ? 'Today, ${_monthLabel(selectedDay)}'
+            : _monthLabel(selectedDay);
+        final workoutEntries = state.workoutEvents
+            .where((event) => isSameDay(event.day, selectedDay))
+            .toList(growable: false);
 
-    return Scaffold(
-      backgroundColor: AppColors.pageBackground,
-      appBar: AppBar(
-        backgroundColor: AppColors.pageBackground,
-        elevation: 0,
-        centerTitle: true,
-        leadingWidth: 56,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16),
-          child: Center(
-            child: Assets.icons.bell.svg(
-              width: 24,
-              height: 24,
-            ),
-          ),
-        ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Assets.icons.weekIcon.svg(
-              width: 20,
-              height: 20,
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: _openFullCalendarBottomSheet,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Week 1/4',
-                    style: AppTextStyles.weekIndicatorStyle.copyWith(
-                      color: AppColors.whiteColor,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Assets.icons.arrowDown.svg(
-                    width: 6,
-                    height: 6,
-                  ),
-                ],
+        return Scaffold(
+          backgroundColor: AppColors.pageBackground,
+          appBar: AppBar(
+            backgroundColor: AppColors.pageBackground,
+            elevation: 0,
+            centerTitle: true,
+            leadingWidth: 56,
+            leading: Padding(
+              padding: const EdgeInsets.only(left: 16),
+              child: Center(
+                child: Assets.icons.bell.svg(
+                  width: 24,
+                  height: 24,
+                ),
               ),
             ),
-          ],
-        ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          headerText,
-                          style: AppTextStyles.dateIndicatorStyle.copyWith(
-                            color: AppColors.whiteColor,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Column(
+            title: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Assets.icons.weekIcon.svg(
+                  width: 20,
+                  height: 20,
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _openFullCalendarBottomSheet,
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      TableCalendar<void>(
-                        firstDay: DateTime.utc(2010, 1, 1),
-                        lastDay: DateTime.utc(2035, 12, 31),
-                        focusedDay: _focusedDay,
-                        calendarFormat: CalendarFormat.week,
-                        availableCalendarFormats: const {
-                          CalendarFormat.week: 'Week',
-                        },
-                        startingDayOfWeek: StartingDayOfWeek.monday,
-                        headerVisible: false,
-                        daysOfWeekVisible: true,
-                        sixWeekMonthsEnforced: false,
-                        rowHeight: 60,
-                        daysOfWeekHeight: 28,
-                        selectedDayPredicate: (day) =>
-                            isSameDay(_selectedDay, day),
-                        onDaySelected: _onDaySelected,
-                        onPageChanged: (focusedDay) {
-                          setState(() {
-                            _focusedDay = focusedDay;
-                          });
-                        },
-                        calendarStyle: CalendarStyle(
-                          isTodayHighlighted: false,
-                          outsideDaysVisible: false,
-                          defaultTextStyle:
-                              AppTextStyles.calendarDayDateStyle.copyWith(
-                            color: AppColors.mutedText,
-                          ),
-                          weekendTextStyle:
-                              AppTextStyles.calendarDayDateStyle.copyWith(
-                            color: AppColors.mutedText,
-                          ),
-                          selectedTextStyle:
-                              AppTextStyles.calendarDayDateStyle.copyWith(
-                            color: AppColors.whiteColor,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          todayTextStyle:
-                              AppTextStyles.calendarDayDateStyle.copyWith(
-                            color: AppColors.whiteColor,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          cellMargin: const EdgeInsets.symmetric(vertical: 6),
-                          cellPadding: EdgeInsets.zero,
-                          selectedDecoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.selectedBorder,
-                              width: 2,
-                            ),
-                          ),
-                          todayDecoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.dayBackground,
-                          ),
-                          defaultDecoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.dayBackground,
-                          ),
-                          weekendDecoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.dayBackground,
-                          ),
-                        ),
-                        daysOfWeekStyle: DaysOfWeekStyle(
-                          weekdayStyle: AppTextStyles.calendarDayNameStyle.copyWith(
-                            color: AppColors.whiteColor,
-                          ),
-                          weekendStyle: AppTextStyles.calendarDayNameStyle.copyWith(
-                            color: AppColors.whiteColor,
-                          ),
-                          dowTextFormatter: (day, locale) {
-                            const labels = <String>[
-                              'M',
-                              'TU',
-                              'W',
-                              'TH',
-                              'F',
-                              'SA',
-                              'SU',
-                            ];
-                            return labels[day.weekday - 1];
-                          },
-                        ),
-                        calendarBuilders: CalendarBuilders(
-                          defaultBuilder: (context, day, focusedDay) {
-                            final isSelected = isSameDay(day, _selectedDay);
-                            return _DayCell(
-                              day: day.day.toString(),
-                              backgroundColor: AppColors.dayBackground,
-                              selected: isSelected,
-                              textColor: AppColors.whiteColor,
-                              selectedBorderColor: AppColors.selectedBorder,
-                              selectedDotColor: AppColors.selectedBorder,
-                            );
-                          },
-                          todayBuilder: (context, day, focusedDay) {
-                            final isSelected = isSameDay(day, _selectedDay);
-                            return _DayCell(
-                              day: day.day.toString(),
-                              backgroundColor: AppColors.dayBackground,
-                              selected: isSelected,
-                              textColor: AppColors.whiteColor,
-                              selectedBorderColor: AppColors.selectedBorder,
-                              selectedDotColor: AppColors.selectedBorder,
-                            );
-                          },
-                          selectedBuilder: (context, day, focusedDay) {
-                            return _DayCell(
-                              day: day.day.toString(),
-                              backgroundColor: AppColors.dayBackground,
-                              selected: true,
-                              textColor: AppColors.whiteColor,
-                              selectedBorderColor: AppColors.selectedBorder,
-                              selectedDotColor: AppColors.selectedBorder,
-                            );
-                          },
-                          dowBuilder: (context, day) {
-                            const labels = <String>[
-                              'M',
-                              'TU',
-                              'W',
-                              'TH',
-                              'F',
-                              'SA',
-                              'SU',
-                            ];
-                            final label = labels[day.weekday - 1];
-                            return Center(
-                              child: Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: Text(
-                                  label,
-                                  style: AppTextStyles.calendarDayNameStyle.copyWith(
-                                    color: AppColors.whiteColor,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
+                      Text(
+                        state.nutritionWeekLabel,
+                        style: AppTextStyles.weekIndicatorStyle.copyWith(
+                          color: AppColors.whiteColor,
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      Center(
-                        child: Container(
-                          width: 52,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: AppColors.dayBackground,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                        ),
+                      const SizedBox(width: 8),
+                      Assets.icons.arrowDown.svg(
+                        width: 6,
+                        height: 6,
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          ),
+          body: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              headerText,
+                              style: AppTextStyles.dateIndicatorStyle.copyWith(
+                                color: AppColors.whiteColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TableCalendar<void>(
+                            firstDay: DateTime.utc(2010, 1, 1),
+                            lastDay: DateTime.utc(2035, 12, 31),
+                            focusedDay: state.nutritionFocusedDay,
+                            calendarFormat: CalendarFormat.week,
+                            availableCalendarFormats: const {
+                              CalendarFormat.week: 'Week',
+                            },
+                            startingDayOfWeek: StartingDayOfWeek.monday,
+                            headerVisible: false,
+                            daysOfWeekVisible: true,
+                            sixWeekMonthsEnforced: false,
+                            rowHeight: 60,
+                            daysOfWeekHeight: 28,
+                            selectedDayPredicate: (day) =>
+                                isSameDay(selectedDay, day),
+                            onDaySelected: _onDaySelected,
+                            onPageChanged: (focusedDay) {
+                              context
+                                  .read<PlanBloc>()
+                                  .focusNutritionDay(focusedDay);
+                            },
+                            calendarStyle: CalendarStyle(
+                              isTodayHighlighted: false,
+                              outsideDaysVisible: false,
+                              defaultTextStyle:
+                                  AppTextStyles.calendarDayDateStyle.copyWith(
+                                color: AppColors.mutedText,
+                              ),
+                              weekendTextStyle:
+                                  AppTextStyles.calendarDayDateStyle.copyWith(
+                                color: AppColors.mutedText,
+                              ),
+                              selectedTextStyle:
+                                  AppTextStyles.calendarDayDateStyle.copyWith(
+                                color: AppColors.whiteColor,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              todayTextStyle:
+                                  AppTextStyles.calendarDayDateStyle.copyWith(
+                                color: AppColors.whiteColor,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              cellMargin:
+                                  const EdgeInsets.symmetric(vertical: 6),
+                              cellPadding: EdgeInsets.zero,
+                              selectedDecoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.selectedBorder,
+                                  width: 2,
+                                ),
+                              ),
+                              todayDecoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.dayBackground,
+                              ),
+                              defaultDecoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.dayBackground,
+                              ),
+                              weekendDecoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.dayBackground,
+                              ),
+                            ),
+                            daysOfWeekStyle: DaysOfWeekStyle(
+                              weekdayStyle:
+                                  AppTextStyles.calendarDayNameStyle.copyWith(
+                                color: AppColors.whiteColor,
+                              ),
+                              weekendStyle:
+                                  AppTextStyles.calendarDayNameStyle.copyWith(
+                                color: AppColors.whiteColor,
+                              ),
+                              dowTextFormatter: (day, locale) {
+                                const labels = <String>[
+                                  'M',
+                                  'TU',
+                                  'W',
+                                  'TH',
+                                  'F',
+                                  'SA',
+                                  'SU',
+                                ];
+                                return labels[day.weekday - 1];
+                              },
+                            ),
+                            calendarBuilders: CalendarBuilders(
+                              defaultBuilder: (context, day, focusedDay) {
+                                final isSelected = isSameDay(day, selectedDay);
+                                return _DayCell(
+                                  day: day.day.toString(),
+                                  backgroundColor: AppColors.dayBackground,
+                                  selected: isSelected,
+                                  textColor: AppColors.whiteColor,
+                                  selectedBorderColor: AppColors.selectedBorder,
+                                  hasWorkout: planBloc.hasWorkoutOn(day),
+                                );
+                              },
+                              todayBuilder: (context, day, focusedDay) {
+                                final isSelected = isSameDay(day, selectedDay);
+                                return _DayCell(
+                                  day: day.day.toString(),
+                                  backgroundColor: AppColors.dayBackground,
+                                  selected: isSelected,
+                                  textColor: AppColors.whiteColor,
+                                  selectedBorderColor: AppColors.selectedBorder,
+                                  hasWorkout: planBloc.hasWorkoutOn(day),
+                                );
+                              },
+                              selectedBuilder: (context, day, focusedDay) {
+                                return _DayCell(
+                                  day: day.day.toString(),
+                                  backgroundColor: AppColors.dayBackground,
+                                  selected: true,
+                                  textColor: AppColors.whiteColor,
+                                  selectedBorderColor: AppColors.selectedBorder,
+                                  hasWorkout: planBloc.hasWorkoutOn(day),
+                                );
+                              },
+                              dowBuilder: (context, day) {
+                                const labels = <String>[
+                                  'M',
+                                  'TU',
+                                  'W',
+                                  'TH',
+                                  'F',
+                                  'SA',
+                                  'SU',
+                                ];
+                                final label = labels[day.weekday - 1];
+                                return Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(bottom: 10),
+                                    child: Text(
+                                      label,
+                                      style: AppTextStyles.calendarDayNameStyle
+                                          .copyWith(
+                                        color: AppColors.whiteColor,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Center(
+                            child: Container(
+                              width: 52,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: AppColors.dayBackground,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Workouts',
+                              style: AppTextStyles.heading.copyWith(
+                                color: AppColors.whiteColor,
+                              ),
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _weatherIcon.svg(
+                                  width: 24,
+                                  height: 24,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '9°',
+                                  style: AppTextStyles.temperatureStyle.copyWith(
+                                    color: AppColors.whiteColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        if (workoutEntries.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Text(
+                              'No workouts scheduled.',
+                              style:
+                                  AppTextStyles.planWeekSubtitleStyle.copyWith(
+                                color: AppColors.mutedText,
+                              ),
+                            ),
+                          )
+                        else
+                          ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            padding: EdgeInsets.zero,
+                            itemCount: workoutEntries.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 16),
+                            itemBuilder: (context, index) {
+                              return WorkoutCalendarEntryCard(
+                                event: workoutEntries[index],
+                              );
+                            },
+                          ),
+                        const SizedBox(height: 24),
                         Text(
-                          'Workouts',
+                          'Insights',
                           style: AppTextStyles.heading.copyWith(
                             color: AppColors.whiteColor,
                           ),
                         ),
+                        const SizedBox(height: 16),
                         Row(
-                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _weatherIcon.svg(
-                              width: 24,
-                              height: 24,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              '9°',
-                              style: AppTextStyles.temperatureStyle.copyWith(
-                                color: AppColors.whiteColor,
+                            Expanded(
+                              child: CalorieInsightWidget(
+                                data: _calorieInsight,
                               ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: WeightInsightWidget(data: _weightInsight),
                             ),
                           ],
                         ),
+                        const SizedBox(height: 20),
+                        HydrationLogWidget(data: _hydrationLog),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      padding: EdgeInsets.zero,
-                      itemCount: _workoutEntries.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 16),
-                      itemBuilder: (context, index) {
-                        return WorkoutCalendarEntryCard(
-                          entry: _workoutEntries[index],
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Insights',
-                      style: AppTextStyles.heading.copyWith(
-                        color: AppColors.whiteColor,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: CalorieInsightWidget(data: _calorieInsight),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: WeightInsightWidget(data: _weightInsight),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    HydrationLogWidget(data: _hydrationLog),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -692,7 +707,7 @@ class _DayCell extends StatelessWidget {
     required this.selected,
     required this.textColor,
     required this.selectedBorderColor,
-    required this.selectedDotColor,
+    required this.hasWorkout,
   });
 
   final String day;
@@ -700,7 +715,7 @@ class _DayCell extends StatelessWidget {
   final bool selected;
   final Color textColor;
   final Color selectedBorderColor;
-  final Color selectedDotColor;
+  final bool hasWorkout;
 
   @override
   Widget build(BuildContext context) {
@@ -728,12 +743,12 @@ class _DayCell extends StatelessWidget {
         const SizedBox(height: 6),
         SizedBox(
           height: 8,
-          child: selected
+          child: hasWorkout
               ? Container(
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: selectedDotColor,
+                    color: AppColors.selectedBorder,
                     shape: BoxShape.circle,
                   ),
                 )

@@ -11,7 +11,6 @@ class AppTextStyles {
     fontFamily: _fontFamily,
     fontSize: 23.sp,
     fontWeight: FontWeight.w600,
-  
   );
 
   // 2. Title
@@ -132,5 +131,89 @@ class AppTextStyles {
     fontFamily: _fontFamily,
     fontSize: 14.sp,
     fontWeight: FontWeight.w400,
+  );
+
+  // 19. Save Text Style
+  static TextStyle saveTextStyle = TextStyle(
+    fontFamily: _fontFamily,
+    fontSize: 18.sp,
+    fontWeight: FontWeight.w700,
+  );
+
+  // 20. Plan Week Title Style
+  static TextStyle planWeekTitleStyle = TextStyle(
+    fontFamily: _fontFamily,
+    fontSize: 18.sp,
+    fontWeight: FontWeight.w700,
+  );
+
+  // 21. Plan Week Subtitle Style
+  static TextStyle planWeekSubtitleStyle = TextStyle(
+    fontFamily: _fontFamily,
+    fontSize: 16.sp,
+    fontWeight: FontWeight.w400,
+  );
+
+  // 22. Plan Calendar Weekday Style
+  static TextStyle planCalendarWeekdayStyle = TextStyle(
+    fontFamily: _fontFamily,
+    fontSize: 14.sp,
+    fontWeight: FontWeight.w700,
+  );
+
+  // 23. Plan Calendar Date Style
+  static TextStyle planCalendarDateStyle = TextStyle(
+    fontFamily: _fontFamily,
+    fontSize: 20.sp,
+    fontWeight: FontWeight.w500,
+  );
+
+  // 24. Plan Calendar Badge Style
+  static TextStyle planCalendarBadgeStyle = TextStyle(
+    fontFamily: _fontFamily,
+    fontSize: 10.sp,
+    fontWeight: FontWeight.w600,
+  );
+
+  // 25. Plan Calendar Event Title Style
+  static TextStyle planCalendarEventTitleStyle = TextStyle(
+    fontFamily: _fontFamily,
+    fontSize: 14.sp,
+    fontWeight: FontWeight.w400,
+  );
+
+  // 26. Plan Calendar Duration Style
+  static TextStyle planCalendarDurationStyle = TextStyle(
+    fontFamily: _fontFamily,
+    fontSize: 14.sp,
+    fontWeight: FontWeight.w400,
+  );
+
+  // 27. Mood Title Style
+  static TextStyle moodTitleStyle = TextStyle(
+    fontFamily: _fontFamily,
+    fontSize: 28.sp,
+    fontWeight: FontWeight.w400,
+  );
+
+  // 28. Mood Subtitle Style
+  static TextStyle moodSubtitleStyle = TextStyle(
+    fontFamily: _fontFamily,
+    fontSize: 16.sp,
+    fontWeight: FontWeight.w400,
+  );
+
+  // 29. Mood Question Style
+  static TextStyle moodQuestionStyle = TextStyle(
+    fontFamily: _fontFamily,
+    fontSize: 22.sp,
+    fontWeight: FontWeight.w600,
+  );
+
+  // 30. Mood Continue Button Style
+  static TextStyle moodContinueButtonStyle = TextStyle(
+    fontFamily: 'Manrope',
+    fontSize: 16.sp,
+    fontWeight: FontWeight.w600,
   );
 }

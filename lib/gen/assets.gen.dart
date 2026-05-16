@@ -23,9 +23,18 @@ class $AssetsIconsGen {
   /// File path: assets/icons/bell.svg
   SvgGenImage get bell => const SvgGenImage('assets/icons/bell.svg');
 
+  /// File path: assets/icons/calm.svg
+  SvgGenImage get calm => const SvgGenImage('assets/icons/calm.svg');
+
   /// File path: assets/icons/benchPress.svg
   SvgGenImage get benchPress =>
       const SvgGenImage('assets/icons/benchPress.svg');
+
+  /// File path: assets/icons/content.svg
+  SvgGenImage get content => const SvgGenImage('assets/icons/content.svg');
+
+  /// File path: assets/icons/happy.svg
+  SvgGenImage get happy => const SvgGenImage('assets/icons/happy.svg');
 
   /// File path: assets/icons/legDay.svg
   SvgGenImage get legDay => const SvgGenImage('assets/icons/legDay.svg');
@@ -38,6 +47,9 @@ class $AssetsIconsGen {
 
   /// File path: assets/icons/nutrition.svg
   SvgGenImage get nutrition => const SvgGenImage('assets/icons/nutrition.svg');
+
+  /// File path: assets/icons/peaceful.svg
+  SvgGenImage get peaceful => const SvgGenImage('assets/icons/peaceful.svg');
 
   /// File path: assets/icons/plan.svg
   SvgGenImage get plan => const SvgGenImage('assets/icons/plan.svg');
@@ -67,11 +79,15 @@ class $AssetsIconsGen {
   List<SvgGenImage> get values => [
     arrowDown,
     bell,
+    calm,
     benchPress,
+    content,
+    happy,
     legDay,
     mood,
     moon,
     nutrition,
+    peaceful,
     plan,
     profile,
     rightArrow,
