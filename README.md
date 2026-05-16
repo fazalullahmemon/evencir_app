@@ -1,5 +1,5 @@
 # evencir_app
-
+The Evencir App is a Fitness App prototype. It is made to showcase flutter skills.
 ## Dependencies Used & Why
 
 ### Flutter SDK
